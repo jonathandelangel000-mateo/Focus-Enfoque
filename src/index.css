@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+/* ==========================================
+   ESTILOS DE TEMA CLARO DINÁMICOS Y ROBUSTOS
+   ========================================== */
+.light-mode {
+  background-color: #f6f7fb !important;
+  color: #12131a !important;
+}
+
+/* 1. Forzar fondos CLAROS (Blancos) en contenedores y tarjetas oscuras primarias */
+.light-mode aside,
+.light-mode header,
+.light-mode [class*="bg-black"],
+.light-mode [class*="bg-[#07070a]"],
+.light-mode [class*="bg-[#08080c]"],
+.light-mode [class*="bg-[#0a0a0f]"],
+.light-mode [class*="bg-[#0a0a0e]"],
+.light-mode [class*="bg-[#0a0a0c]"],
+.light-mode [class*="bg-[#0c0c10]"],
+.light-mode [class*="bg-[#0c0c11]"],
+.light-mode [class*="bg-[#0d0d15]"],
+.light-mode [class*="bg-[#08080b]"],
+.light-mode [class*="bg-[#050510]"],
+.light-mode [class*="bg-[#050508]"],
+.light-mode [class*="bg-[#09090c]"],
+.light-mode [class*="bg-[#15151c]"] {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e2e8f0 !important;
+  color: #12131a !important;
+}
+
+/* 2. Forzar fondos de contenedores anidados/secundarios o entradas de formulario */
+.light-mode [class*="bg-gray-950"],
+.light-mode [class*="bg-[#111116]"],
+.light-mode [class*="bg-[#12121c]"],
+.light-mode [class*="bg-[#1a1a24]"],
+.light-mode [class*="bg-[#111119]"],
+.light-mode [class*="bg-[#171720]"],
+.light-mode [class*="bg-[#131118]"],
+.light-mode [class*="bg-[#121217]"],
+.light-mode [class*="bg-[#131318]"],
+.light-mode [class*="bg-[#08080d]"],
+.light-mode [class*="bg-[#111118]"],
+.light-mode [class*="bg-[#171725]"],
+.light-mode [class*="bg-[#111117]"],
+.light-mode [class*="bg-[#2a2a38]"] {
+  background-color: #f1f5f9 !important;
+  background-image: none !important;
+  border-color: #cbd5e1 !important;
+  color: #12131a !important;
+}
+
+/* Remover gradientes oscuros en dashboards y widgets */
+.light-mode [class*="from-[#0c0c10]"],
+.light-mode [class*="from-[#010103]"],
+.light-mode [class*="from-[#171720]"],
+.light-mode [class*="from-black"],
+.light-mode [class*="from-[#0a0a0f]"],
+.light-mode [class*="from-gray-950"] {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* 3. Selección en barra lateral (Sidebar Selected State) */
+.light-mode button[class*="from-[#171720]"] {
+  background-color: #edf2f7 !important;
+  background-image: none !important;
+  border-color: #cbd5e1 !important;
+}
+.light-mode button[class*="from-[#171720]"] span,
+.light-mode button[class*="from-[#171720]"] p {
+  color: #0d0d15 !important;
+}
+.light-mode button[class*="from-[#171720]"] svg {
+  opacity: 1 !important;
+}
+
+/* 4. Asegurar contraste supremo de tipografía (Encabezados y leyendas) */
+.light-mode [class*="text-white"],
+.light-mode [class*="text-gray-100"],
+.light-mode [class*="text-gray-200"],
+.light-mode [class*="text-[#ededf0]"],
+.light-mode h1,
+.light-mode h2,
+.light-mode h3,
+.light-mode h4,
+.light-mode h5,
+.light-mode h6,
+.light-mode .text-white {
+  color: #0f172a !important;
+}
+
+/* Textos secundarios sumamente legibles */
+.light-mode [class*="text-gray-300"],
+.light-mode [class*="text-gray-400"],
+.light-mode [class*="text-slate-300"],
+.light-mode [class*="text-slate-400"],
+.light-mode [class*="text-slate-500"],
+.light-mode [class*="text-[#888892]"],
+.light-mode [class*="text-[#7c7c8a]"],
+.light-mode [class*="text-gray-500"] {
+  color: #334155 !important;
+}
+
+/* Textos tenues / Muted / Placeholders legibles */
+.light-mode [class*="text-gray-600"],
+.light-mode [class*="text-slate-600"],
+.light-mode [class*="text-[#555562]"],
+.light-mode [class*="text-[#444452]"] {
+  color: #556275 !important;
+}
+
+/* Evitar textos blancos en los hovers de botones y píldoras */
+.light-mode button:hover {
+  color: #0f172a !important;
+}
+.light-mode button[class*="text-gray-400"]:hover,
+.light-mode button[class*="text-[#888892]"]:hover {
+  color: #0f172a !important;
+}
+
+/* Ajustes robustos para botones ya seleccionados (p. ej., píldoras del filtro "Todo", "Pend", "Hech") */
+.light-mode button[class*="bg-white"] {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+.light-mode button[class*="bg-white"]:hover {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+/* 5. Ajustes de Bordes generales */
+.light-mode border,
+.light-mode [class*="border-[#16161c]"],
+.light-mode [class*="border-[#16161a]"],
+.light-mode [class*="border-[#14141a]"],
+.light-mode [class*="border-[#14141f]"],
+.light-mode [class*="border-[#1a1a1f]"],
+.light-mode [class*="border-[#1a1a24]"],
+.light-mode [class*="border-[#1b1b26]"],
+.light-mode [class*="border-[#161622]"],
+.light-mode [class*="border-[#23232c]"],
+.light-mode [class*="border-[#21212b]"],
+.light-mode [class*="border-[#131118]"],
+.light-mode [class*="border-white/10"],
+.light-mode [class*="border-[#13131b]"],
+.light-mode [class*="border-[#1c1b26]"] {
+  border-color: #cbd5e1 !important;
+}
+
+/* 6. Entradas de formulario, select e inputs */
+.light-mode input,
+.light-mode select,
+.light-mode textarea {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light-mode input::placeholder,
+.light-mode textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Ajustar los items interactivos hover */
+.light-mode [class*="hover:bg-[#111116]"]:hover,
+.light-mode [class*="hover:bg-white/5"]:hover,
+.light-mode [class*="hover:bg-white/10"]:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Ajuste de tablas, celdas y otros */
+.light-mode td,
+.light-mode th {
+  color: #0f172a !important;
+}
+
+/* Reafirmar sombras limpias y nítidas en lugar de resplandores de neón oscuros */
+.light-mode .shadow-lg,
+.light-mode [class*="shadow-[0_0"] {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Mejorar visualización del gráfico semanal en modo claro */
+.light-mode svg polyline {
+  stroke-width: 2 !important;
+}
+.light-mode svg circle {
+  fill: #ffffff !important;
+  stroke-width: 3 !important;
+}
+.light-mode svg text {
+  fill: #475569 !important;
+}
