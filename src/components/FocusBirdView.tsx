@@ -4,9 +4,10 @@ import { motion } from 'motion/react';
 
 interface FocusBirdViewProps {
   colorTema: string;
+  addNotification?: (title: string, body: string, type: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
-export default function FocusBirdView({ colorTema }: FocusBirdViewProps) {
+export default function FocusBirdView({ colorTema, addNotification }: FocusBirdViewProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -70,7 +71,7 @@ export default function FocusBirdView({ colorTema }: FocusBirdViewProps) {
           </div>
 
           {/* Real Embedded Game Frame Container */}
-          <div className="relative w-full h-[480px] bg-[#050508] rounded-xl overflow-hidden border border-[#171725] flex items-center justify-center">
+          <div className="relative w-full h-[300px] sm:h-[400px] md:h-[480px] bg-[#050508] rounded-xl overflow-hidden border border-[#171725] flex items-center justify-center">
             
             {!iframeLoaded && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#07070a] gap-4">

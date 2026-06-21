@@ -14,9 +14,10 @@ interface TareasViewProps {
   tasks: Task[];
   setTasks: (tasks: Task[] | ((prev: Task[]) => Task[])) => void;
   colorTema: string;
+  addNotification?: (title: string, body: string, type: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
-export default function TareasView({ tasks, setTasks, colorTema }: TareasViewProps) {
+export default function TareasView({ tasks, setTasks, colorTema, addNotification }: TareasViewProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -36,22 +37,52 @@ export default function TareasView({ tasks, setTasks, colorTema }: TareasViewPro
     };
 
     setTasks(prev => [newTask, ...prev]);
+    if (addNotification) {
+      addNotification(
+        'Tarea Registrada 📝', 
+        `Se añadió la tarea: "${newTask.title}"${newTask.priority === 'high' ? ' (Prioridad Alta - Crítico)' : ''}`, 
+        newTask.priority === 'high' ? 'warning' : 'success'
+      );
+    }
     setNewTitle('');
     setNewDueDate('');
   };
 
   const handleToggleTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    
+    if (addNotification) {
+      if (!task.completed) {
+        addNotification(
+          '¡Buen trabajo! 🎉', 
+          `Has marcado como completada la tarea: "${task.title}"`, 
+          'success'
+        );
+      } else {
+        addNotification(
+          'Tarea Reactivada ↩️', 
+          `Se marcó pendiente la tarea: "${task.title}"`, 
+          'info'
+        );
+      }
+    }
   };
 
   const handleDeleteTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
+    if (task && addNotification) {
+      addNotification('Tarea Eliminada 🗑️', `Se eliminó la tarea: "${task.title}"`, 'info');
+    }
   };
 
   const filteredTasks = tasks.filter(t => {
     if (filter === 'completed') return t.completed;
     if (filter === 'pending') return !t.completed;
-    return true;
+    return !t.completed; // Hide completed tasks from 'all' view too
   });
 
   const totalTasks = tasks.length;

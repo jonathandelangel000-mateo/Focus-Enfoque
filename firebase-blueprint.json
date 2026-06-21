@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered user profile and metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastLoginAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "User task item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "priority": { "type": "string" },
+        "dueDate": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "completed", "priority"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "User note document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string" },
+        "isQuote": { "type": "boolean" },
+        "author": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "content", "date"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "User habit tracking definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "frequency": { "type": "string" },
+        "completedDays": { "type": "object" },
+        "streak": { "type": "number" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "userId", "name", "frequency", "completedDays"]
+    },
+    "AgendaEvent": {
+      "title": "AgendaEvent",
+      "description": "Calendar or planning event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["id", "userId", "title", "date", "time", "completed"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "User spent or expense",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["id", "userId", "description", "amount", "category", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Profiles of registered users"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Tasks created by users"
+    },
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Notes captured by users"
+    },
+    "/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "Habit trackers defined by users"
+    },
+    "/events/{eventId}": {
+      "schema": "AgendaEvent",
+      "description": "Scheduled events in agenda"
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "User financial expenses records"
+    }
+  }
+}

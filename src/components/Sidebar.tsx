@@ -12,7 +12,10 @@ import {
   ChevronLeft,
   ChevronRight,
   LifeBuoy,
-  X
+  X,
+  Cloud,
+  Database,
+  Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -34,6 +37,7 @@ export default function Sidebar({
   colorTema
 }: SidebarProps) {
   const [showEnlargedAvatar, setShowEnlargedAvatar] = useState(false);
+  const [showCloudConfigInfo, setShowCloudConfigInfo] = useState(false);
   const menuItems = [
     { id: 'inicio', label: 'Inicio', icon: Home, desc: 'Panel de control neural' },
     { id: 'tareas', label: 'Tareas y Recordatorios', icon: CheckSquare, desc: 'Pendientes y prioridades' },
@@ -46,24 +50,55 @@ export default function Sidebar({
   ];
 
   return (
-    <aside 
-      className={`relative h-screen bg-[#0a0a0c] border-r border-[#1a1a1f] flex flex-col justify-between transition-all duration-300 ${
-        collapsed ? 'w-20' : 'w-72'
-      } z-50`}
-      style={{
-        boxShadow: `inset -10px 0 30px rgba(0, 0, 0, 0.4)`
-      }}
-    >
-      {/* Brand & Toggle Button */}
-      <div className="p-6 border-b border-[#16161a] flex items-center justify-between">
-        {!collapsed && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-3"
-          >
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {!collapsed && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+      <aside 
+        className={`fixed md:relative top-0 bottom-0 left-0 h-screen bg-[#0a0a0c] border-r border-[#1a1a1f] flex flex-col justify-between transition-all duration-300 ${
+          collapsed 
+            ? '-translate-x-full md:translate-x-0 w-72 md:w-20' 
+            : 'translate-x-0 w-72'
+        } z-50`}
+        style={{
+          boxShadow: `inset -10px 0 30px rgba(0, 0, 0, 0.4)`
+        }}
+      >
+        {/* Brand & Toggle Button */}
+        <div className="p-6 border-b border-[#16161a] flex items-center justify-between">
+          {!collapsed && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-3"
+            >
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center font-mono font-black text-black text-xs tracking-wider transition-all duration-300 shrink-0"
+                style={{
+                  backgroundColor: colorTema,
+                  boxShadow: `0 0 15px ${colorTema}`
+                }}
+              >
+                F
+              </div>
+              <div>
+                <span className="font-sans font-bold text-white text-lg tracking-wider block">
+                  FOCUS
+                </span>
+                <span className="font-mono text-[9px] text-[#888892] tracking-widest uppercase -mt-1 block">
+                  OS v1.0.4
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          {collapsed && (
             <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center font-mono font-black text-black text-xs tracking-wider transition-all duration-300 shrink-0"
+              className="w-8 h-8 rounded-full mx-auto flex items-center justify-center font-mono font-black text-black text-xs tracking-wider transition-all duration-300"
               style={{
                 backgroundColor: colorTema,
                 boxShadow: `0 0 15px ${colorTema}`
@@ -71,37 +106,16 @@ export default function Sidebar({
             >
               F
             </div>
-            <div>
-              <span className="font-sans font-bold text-white text-lg tracking-wider block">
-                FOCUS
-              </span>
-              <span className="font-mono text-[9px] text-[#888892] tracking-widest uppercase -mt-1 block">
-                OS v1.0.4
-              </span>
-            </div>
-          </motion.div>
-        )}
+          )}
 
-        {collapsed && (
-          <div 
-            className="w-8 h-8 rounded-full mx-auto flex items-center justify-center font-mono font-black text-black text-xs tracking-wider transition-all duration-300"
-            style={{
-              backgroundColor: colorTema,
-              boxShadow: `0 0 15px ${colorTema}`
-            }}
+          {/* Floating Toggle button */}
+          <button 
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden md:flex absolute right-[-14px] top-6 w-7 h-7 rounded-full bg-[#131318] border border-[#2a2a35] text-gray-400 hover:text-white items-center justify-center transition-all shadow-[0_4px_10px_rgba(0,0,0,0.5)] cursor-pointer"
           >
-            F
-          </div>
-        )}
-
-        {/* Floating Toggle button */}
-        <button 
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute right-[-14px] top-6 w-7 h-7 rounded-full bg-[#131318] border border-[#2a2a35] text-gray-400 hover:text-white flex items-center justify-center transition-all shadow-[0_4px_10px_rgba(0,0,0,0.5)] cursor-pointer"
-        >
-          {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
-        </button>
-      </div>
+            {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+          </button>
+        </div>
 
       {/* User Profile Summary */}
       <div className={`p-4 border-b border-[#16161a] transition-all ${collapsed ? 'text-center' : 'p-6'}`}>
@@ -143,7 +157,12 @@ export default function Sidebar({
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentSection(item.id)}
+              onClick={() => {
+                setCurrentSection(item.id);
+                if (window.innerWidth < 768) {
+                  setCollapsed(true);
+                }
+              }}
               className={`w-full group relative flex items-center gap-4 py-3 px-4 rounded-xl transition-all text-left ${
                 isSelected 
                   ? 'bg-gradient-to-r from-[#171720] to-[#121217] text-white border border-[#2a2a38]' 
@@ -212,6 +231,36 @@ export default function Sidebar({
         </a>
       </div>
 
+      {/* Cloud Sync Status info widget (Punto 1) */}
+      {!collapsed && (
+        <div className="p-4 border-t border-[#14141c] bg-[#07070a]/40 shrink-0">
+          <button 
+            type="button"
+            onClick={() => setShowCloudConfigInfo(true)}
+            className="w-full p-2.5 rounded-xl border border-[#1c1c24] bg-black/40 hover:bg-[#111116] hover:border-[#2b2b35] transition-all flex items-center justify-between text-left cursor-pointer group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <div>
+                <span className="font-sans font-medium text-[10px] text-gray-300 group-hover:text-white transition-colors block leading-tight">
+                  Sincronización
+                </span>
+                <span className="font-mono text-[7.5px] text-emerald-500 uppercase tracking-widest block font-bold mt-0.5">
+                  Firestore Activo ✓
+                </span>
+              </div>
+            </div>
+            
+            <span className="font-mono text-[8px] text-[#444455] group-hover:text-gray-350 transition-colors uppercase border border-[#1b1b26] px-1.5 py-0.5 rounded bg-[#09090b] tracking-wider shrink-0">
+              INFO
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* System Status Credit */}
       {!collapsed && (
         <div className="p-5 border-t border-[#131118] bg-[#07070a]/50 text-center shrink-0">
@@ -223,6 +272,93 @@ export default function Sidebar({
 
       {/* Enlarged Avatar Modal Zoom Panel */}
       <AnimatePresence>
+        {/* Cloud Architecture Explanation Modal */}
+        {showCloudConfigInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 cursor-pointer"
+            onClick={() => setShowCloudConfigInfo(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.92, y: 10, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="relative max-w-md w-full bg-[#0a0a0f] border border-[#1c1c27] rounded-3xl p-6 space-y-5 shadow-[0_25px_60px_rgba(0,0,0,0.85)] cursor-default text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header inside modal */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#161622]">
+                <div className="flex items-center gap-2">
+                  <Cloud size={16} className="text-emerald-400" />
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#888892] font-bold">Resguardo de Datos Focus OS</span>
+                </div>
+                <button
+                  onClick={() => setShowCloudConfigInfo(false)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Modal Core Content */}
+              <div className="space-y-4">
+                <div className="flex gap-3.5 items-start">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400">
+                    <Database size={15} />
+                  </div>
+                  <div>
+                    <h5 className="font-sans font-semibold text-white text-xs">Almacenamiento Continuo en Firebase Firestore</h5>
+                    <p className="text-[11px] text-gray-400 font-light mt-1 leading-relaxed">
+                      Todas tus notas, rutinas de hábitos, eventos redactados, tareas pendientes y gastos financieros se transmiten de inmediato a nuestra base de datos en tiempo real de <b>Google Firebase</b>. No dependen de la memoria de tu dispositivo.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3.5 items-start">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 text-cyan-400">
+                    <Shield size={15} />
+                  </div>
+                  <div>
+                    <h5 className="font-sans font-semibold text-white text-xs font-bold">Privacidad Aislada por UID de Usuario</h5>
+                    <p className="text-[11px] text-gray-400 font-light mt-1 leading-relaxed">
+                      Focus OS aplica reglas de seguridad de datos estrictas en Firestore. Tus datos están completamente segregados por tu Identificador de Cuenta (<b>UID</b>), garantizando que nungún otro usuario pueda leer, modificar u husmear tus notas o gastos personales.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3.5 items-start">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400">
+                    <Cloud size={15} />
+                  </div>
+                  <div>
+                    <h5 className="font-sans font-semibold text-white text-xs">Encriptación TLS 1.3 de Extremo a Extremo</h5>
+                    <p className="text-[11px] text-gray-400 font-light mt-1 leading-relaxed">
+                      Toda comunicación de datos viaja de manera fluida utilizando SSL/TLS de última generación entre tu navegador de internet y la infraestructura segura de Google, previniendo interrupciones o capturas de datos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informative notification footnote */}
+              <div className="bg-[#12121c] p-3 rounded-2xl border border-[#212130] text-[10px] text-gray-400 flex items-center gap-2">
+                <span>⚡</span>
+                <span>Tu sesión se mantiene sincronizada de forma transparente conforme agregas o editas contenido.</span>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowCloudConfigInfo(false)}
+                className="w-full py-3 rounded-xl text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-90 transition cursor-pointer"
+                style={{ backgroundColor: colorTema }}
+              >
+                Entendido
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
         {showEnlargedAvatar && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -282,5 +418,6 @@ export default function Sidebar({
         )}
       </AnimatePresence>
     </aside>
+   </>
   );
 }

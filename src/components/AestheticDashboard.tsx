@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Note, Task, Habit, AgendaEvent, Expense, Quote } from '../types';
 
+
 interface AestheticDashboardProps {
   notes: Note[];
   tasks: Task[];
@@ -27,6 +28,7 @@ interface AestheticDashboardProps {
   quotes: Quote[];
   setCurrentSection: (section: string) => void;
   colorTema: string;
+  addNotification?: (title: string, body: string, type: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
 export default function AestheticDashboard({
@@ -37,7 +39,8 @@ export default function AestheticDashboard({
   expenses,
   quotes,
   setCurrentSection,
-  colorTema
+  colorTema,
+  addNotification
 }: AestheticDashboardProps) {
   // Rotate Quotes State
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
@@ -81,17 +84,25 @@ export default function AestheticDashboard({
 
   const todayStr = getTodayStr();
 
-  // Calculate Routine Compliance for TODAY
+  // Synchronized overall Daily Workload calculation (Habits + Tasks due today + Events for today)
   const dailyHabitsCount = habits.length;
   const completedTodayCount = habits.filter(h => h.completedDays[todayStr] === true).length;
-  const todayCompliancePct = dailyHabitsCount > 0 
-    ? Math.round((completedTodayCount / dailyHabitsCount) * 100) 
-    : 0;
 
-  // Determine if we are "Cumpliendo" today (e.g. >= 70% completed or all completed if total < 3)
-  const isMeetingRoutineToday = dailyHabitsCount > 0 
-    ? (completedTodayCount === dailyHabitsCount || todayCompliancePct >= 66) 
-    : false;
+  const todayTasksList = tasks.filter(t => t.dueDate === todayStr);
+  const todayEventsList = events.filter(e => e.date === todayStr);
+
+  const totalWorkloadToday = dailyHabitsCount + todayTasksList.length + todayEventsList.length;
+  const completedWorkloadToday = completedTodayCount + 
+    todayTasksList.filter(t => t.completed).length + 
+    todayEventsList.filter(e => e.completed).length;
+
+  const todayCompliancePct = totalWorkloadToday > 0 
+    ? Math.round((completedWorkloadToday / totalWorkloadToday) * 100) 
+    : 100;
+
+  const isMeetingRoutineToday = totalWorkloadToday > 0 
+    ? (completedWorkloadToday === totalWorkloadToday || todayCompliancePct >= 66) 
+    : true;
 
   // Calculate past 7 days statistics for the Activity Graph
   const getPast7Days = () => {
@@ -185,7 +196,7 @@ export default function AestheticDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Animated Rotating Quotes Widget (7 cols) */}
-        <div className="lg:col-span-7 bg-gradient-to-br from-[#0c0c10] to-[#010103] border border-[#16161c] rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between h-[230px]">
+        <div className="lg:col-span-7 bg-gradient-to-br from-[#0c0c10] to-[#010103] border border-[#16161c] rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[230px] lg:h-[230px]">
           <div className="absolute right-[-20px] top-[-20px] text-[#ffffff02] pointer-events-none select-none">
             <QuoteIcon size={140} />
           </div>
@@ -242,7 +253,7 @@ export default function AestheticDashboard({
         </div>
 
         {/* Daily routine completion widget CARD visual status (5 cols) */}
-        <div className="lg:col-span-5 bg-[#0a0a0e] border border-[#16161c] rounded-2xl p-6 flex flex-col justify-between h-[230px]">
+        <div className="lg:col-span-5 bg-[#0a0a0e] border border-[#16161c] rounded-2xl p-6 flex flex-col justify-between min-h-[230px] lg:h-[230px]">
           <div className="flex items-center justify-between border-b border-[#16161a] pb-3 mb-2">
             <span className="font-mono text-[9px] uppercase tracking-widest text-[#888892] flex items-center gap-1.5">
               <Repeat size={10} className="text-[#00f2ff]" /> STATUS DE RUTINA DIARIA
@@ -256,7 +267,7 @@ export default function AestheticDashboard({
             </span>
           </div>
 
-          <div className="flex items-center gap-6 py-2">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-4 sm:gap-6 py-2">
             {/* Circular completion ring */}
             <div className="relative shrink-0 w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -291,15 +302,15 @@ export default function AestheticDashboard({
             </div>
 
             {/* Quick descriptive card */}
-            <div className="space-y-2">
+            <div className="space-y-2 text-center sm:text-left">
               <h4 className="font-sans font-medium text-white text-sm">
-                Hábitos de Hoy
+                Enfoque de Hoy
               </h4>
               <p className="text-xs text-gray-400 font-light leading-relaxed">
-                Has completado <span className="font-semibold text-[#00f2ff]">{completedTodayCount}</span> de <span className="text-white font-semibold">{dailyHabitsCount}</span> actividades de tu rutina programada para el día.
+                Has completado <span className="font-semibold text-[#00f2ff]" style={{ color: colorTema }}>{completedWorkloadToday}</span> de <span className="text-white font-semibold">{totalWorkloadToday}</span> hitos de hoy (hábitos, tareas y compromisos en agenda).
               </p>
               
-              <div className="flex items-center gap-1.5 mt-2">
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 mt-2">
                 {isMeetingRoutineToday ? (
                   <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[9px]">
                     <CheckCircle size={10} /> ¡Fidelidad Excelente!
@@ -331,7 +342,7 @@ export default function AestheticDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Weekly Activity Line/Area Graph (7 cols) */}
-        <div className="lg:col-span-7 bg-[#0a0a0f] border border-[#16161c] rounded-2xl p-6 flex flex-col justify-between h-[360px]">
+        <div className="lg:col-span-7 bg-[#0a0a0f] border border-[#16161c] rounded-2xl p-6 flex flex-col justify-between min-h-[300px] lg:h-[360px]">
           <div className="flex items-center justify-between border-b border-[#16161a] pb-3">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-[#888892] flex items-center gap-1.5">
@@ -450,7 +461,7 @@ export default function AestheticDashboard({
         </div>
 
         {/* Bento Board: Quick statistics of modules (5 cols) */}
-        <div className="lg:col-span-5 h-[360px] flex flex-col gap-4">
+        <div className="lg:col-span-5 h-auto lg:h-[360px] flex flex-col gap-3 md:gap-4">
           
           {/* Tareas Card */}
           <div 

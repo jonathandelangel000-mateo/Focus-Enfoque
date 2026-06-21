@@ -5,6 +5,8 @@ export interface Note {
   createdAt: string;
   category: string;
   isQuote?: boolean;
+  isPinned?: boolean;
+  colorCode?: string; // hex or tailwind shade
 }
 
 export interface Task {
@@ -31,6 +33,7 @@ export interface AgendaEvent {
   time: string; // HH:MM
   location?: string;
   category: 'personal' | 'trabajo' | 'estudio' | 'salud';
+  completed?: boolean;
 }
 
 export interface Expense {
@@ -46,3 +49,13 @@ export interface Quote {
   text: string;
   author: string;
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  timestamp: string;
+  read: boolean;
+  type: 'success' | 'info' | 'warning' | 'error';
+}
+

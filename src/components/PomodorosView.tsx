@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface PomodorosViewProps {
   colorTema: string;
+  addNotification?: (title: string, body: string, type: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
-export default function PomodorosView({ colorTema }: PomodorosViewProps) {
+export default function PomodorosView({ colorTema, addNotification }: PomodorosViewProps) {
   // Timer durations in minutes
   const [workTime, setWorkTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
@@ -17,6 +18,205 @@ export default function PomodorosView({ colorTema }: PomodorosViewProps) {
   const [soundEnabled, setSoundEnabled] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Web Audio Context & Synthesizers references
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const soundSourcesRef = useRef<{ [key: string]: { source: any; gainNode: GainNode } }>({});
+  
+  // Track active state of our background focus soundscapes
+  const [activeSoundscapes, setActiveSoundscapes] = useState<{ [key: string]: boolean }>({
+    rain: false,
+    binaural: false,
+    space: false
+  });
+
+  const startSoundscape = (type: 'rain' | 'binaural' | 'space') => {
+    try {
+      // Create audio context if it does not exist
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      // Create a specific gain node for this channel to allow fade-in effects
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
+      gainNode.connect(ctx.destination);
+      
+      // Target gain volumes (binaural is quiet, rain and drone should also be relaxing and unobtrusive)
+      const targetGain = type === 'binaural' ? 0.05 : type === 'space' ? 0.12 : 0.15;
+      gainNode.gain.exponentialRampToValueAtTime(targetGain, ctx.currentTime + 2.0);
+
+      let sourceNode: any;
+
+      if (type === 'rain') {
+        // Generate Brown Noise Buffer for authentic heavy rain sound
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          data[i] = (lastOut + (0.02 * white)) / 1.02;
+          lastOut = data[i];
+          data[i] *= 3.5; // Gain compensation
+        }
+
+        const bufferSource = ctx.createBufferSource();
+        bufferSource.buffer = buffer;
+        bufferSource.loop = true;
+
+        // Add lowpass filter to make it warmer/cozier
+        const filterNode = ctx.createBiquadFilter();
+        filterNode.type = 'lowpass';
+        filterNode.frequency.setValueAtTime(650, ctx.currentTime);
+
+        bufferSource.connect(filterNode);
+        filterNode.connect(gainNode);
+
+        bufferSource.start();
+        sourceNode = bufferSource;
+
+      } else if (type === 'binaural') {
+        // Binaural beats (40Hz difference - Left 180Hz, Right 220Hz)
+        const oscLeft = ctx.createOscillator();
+        const oscRight = ctx.createOscillator();
+        oscLeft.type = 'sine';
+        oscLeft.frequency.setValueAtTime(180, ctx.currentTime);
+        oscRight.type = 'sine';
+        oscRight.frequency.setValueAtTime(220, ctx.currentTime);
+
+        const merger = ctx.createChannelMerger(2);
+        
+        // Connect to merger (Left/Right separate channels)
+        oscLeft.connect(merger, 0, 0);
+        oscRight.connect(merger, 0, 1);
+        merger.connect(gainNode);
+
+        oscLeft.start();
+        oscRight.start();
+
+        // Object proxy containing a manual stop cleanup
+        sourceNode = {
+          disconnect: () => {
+            try {
+              oscLeft.stop();
+              oscRight.stop();
+              oscLeft.disconnect();
+              oscRight.disconnect();
+              merger.disconnect();
+            } catch (e) {}
+          }
+        } as any;
+
+      } else {
+        // Space Engine Drone (Modular Carrier with LFO modulator)
+        const carrier = ctx.createOscillator();
+        carrier.type = 'sine';
+        carrier.frequency.setValueAtTime(90, ctx.currentTime);
+
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(0.40, ctx.currentTime); // 0.4 Hz cycle
+
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.setValueAtTime(14, ctx.currentTime);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(150, ctx.currentTime);
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(carrier.frequency);
+
+        carrier.connect(filter);
+        filter.connect(gainNode);
+
+        carrier.start();
+        lfo.start();
+
+        sourceNode = {
+          disconnect: () => {
+            try {
+              carrier.stop();
+              lfo.stop();
+              carrier.disconnect();
+              lfo.disconnect();
+              lfoGain.disconnect();
+              filter.disconnect();
+            } catch (e) {}
+          }
+        } as any;
+      }
+
+      soundSourcesRef.current[type] = { source: sourceNode, gainNode };
+      setActiveSoundscapes(prev => ({ ...prev, [type]: true }));
+
+      if (addNotification) {
+        addNotification(
+          'Atmosfera Iniciada 🎧', 
+          `Reproduciendo audio sintético de ${type === 'rain' ? 'Lluvia Profunda' : type === 'binaural' ? 'Ondas Binaurales 40Hz' : 'Motor Cósmico'} en tiempo real.`, 
+          'info'
+        );
+      }
+
+    } catch (e) {
+      console.warn("Could not start Web Audio Synthesizer:", e);
+    }
+  };
+
+  const stopSoundscape = (type: 'rain' | 'binaural' | 'space') => {
+    const handle = soundSourcesRef.current[type];
+    if (handle) {
+      try {
+        const ctx = audioCtxRef.current;
+        if (ctx) {
+          handle.gainNode.gain.cancelScheduledValues(ctx.currentTime);
+          handle.gainNode.gain.setValueAtTime(handle.gainNode.gain.value, ctx.currentTime);
+          handle.gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2); // Smooth fade-out 
+        }
+      } catch (e) {}
+
+      setTimeout(() => {
+        try {
+          if (type === 'rain') {
+            (handle.source as AudioBufferSourceNode).stop();
+          }
+          handle.source.disconnect();
+          handle.gainNode.disconnect();
+          delete soundSourcesRef.current[type];
+          setActiveSoundscapes(prev => ({ ...prev, [type]: false }));
+        } catch (e) {}
+      }, 1300);
+    }
+  };
+
+  const toggleSoundscape = (type: 'rain' | 'binaural' | 'space') => {
+    if (activeSoundscapes[type]) {
+      stopSoundscape(type);
+    } else {
+      startSoundscape(type);
+    }
+  };
+
+  // Cleanup synthesizer sound sources on unmount
+  useEffect(() => {
+    return () => {
+      Object.keys(soundSourcesRef.current).forEach(key => {
+        try {
+          const handle = soundSourcesRef.current[key];
+          handle.source.disconnect();
+          handle.gainNode.disconnect();
+        } catch (e) {}
+      });
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(e => {});
+      }
+    };
+  }, []);
 
   // Set the timer limits
   useEffect(() => {
@@ -50,6 +250,23 @@ export default function PomodorosView({ colorTema }: PomodorosViewProps) {
               }
             }
 
+            // Trigger general console notifications
+            if (addNotification) {
+              if (mode === 'work') {
+                addNotification(
+                  'Sesión Completada 🍅', 
+                  '¡Excelente concentración! Es momento de tu descanso programado.', 
+                  'success'
+                );
+              } else {
+                addNotification(
+                  'Regreso al Trabajo 🧠', 
+                  'El descanso ha concluido. Prepárate para otra sesión de enfoque.', 
+                  'info'
+                );
+              }
+            }
+
             // Swap modes
             const nextMode = mode === 'work' ? 'break' : 'work';
             setMode(nextMode);
@@ -65,7 +282,7 @@ export default function PomodorosView({ colorTema }: PomodorosViewProps) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, mode, workTime, breakTime, soundEnabled]);
+  }, [isActive, mode, workTime, breakTime, soundEnabled, addNotification]);
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -164,6 +381,89 @@ export default function PomodorosView({ colorTema }: PomodorosViewProps) {
             <p className="font-sans text-xs text-[#888895] leading-relaxed">
               🧘 <b>Deep Work Guideline:</b> Durante el ciclo de enfoque, desconecta notificaciones de celular y concéntrate al 100% en un solo pendiente a la vez.
             </p>
+          </div>
+
+          {/* Soundscape Mixer Widget (Punto 2) */}
+          <div className="pt-4 border-t border-[#161622] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-[#888892] flex items-center gap-1.5">
+                <Volume2 size={11} className="text-[#10b981]" /> Atmosferas de Aislamiento
+              </span>
+              <span className="font-mono text-[8.5px] text-[#444455] uppercase font-bold tracking-widest">SINTETIZADOR WEB AUDIO</span>
+            </div>
+
+            <p className="font-sans text-[11px] text-gray-400 leading-normal">
+              Mezcla sonidos binaurales y ruidos de baja frecuencia generados en tiempo real por el navegador para aislar distracciones externas.
+            </p>
+
+            <div className="space-y-2 pt-1">
+              {/* Rain Soundscape with Brownian Pink noise */}
+              <button
+                type="button"
+                onClick={() => toggleSoundscape('rain')}
+                className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-xs text-left transition duration-200 cursor-pointer ${
+                  activeSoundscapes.rain
+                    ? 'bg-[rgba(16,185,129,0.08)] border-[#10b981]/40 text-[#10b981]'
+                    : 'bg-[#111116] border-[#22222d] text-gray-400 hover:text-white hover:border-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${activeSoundscapes.rain ? 'bg-[#10b981] animate-pulse' : 'bg-gray-600'}`} />
+                  <div className="min-w-0">
+                    <span className="font-sans font-medium block truncate">Aguacero de Lluvia</span>
+                    <span className="font-mono text-[8px] text-gray-500 block uppercase mt-0.5">Ruido café filtrado</span>
+                  </div>
+                </div>
+                <span className="font-mono text-[8.5px] uppercase tracking-wider bg-black/40 px-1.5 py-0.5 rounded border border-white/5 shrink-0 ml-2">
+                  {activeSoundscapes.rain ? 'ACTIVO' : 'APAGADO'}
+                </span>
+              </button>
+
+              {/* Binaural Focus beats */}
+              <button
+                type="button"
+                onClick={() => toggleSoundscape('binaural')}
+                className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-xs text-left transition duration-200 cursor-pointer`}
+                style={{
+                  color: activeSoundscapes.binaural ? colorTema : undefined,
+                  borderColor: activeSoundscapes.binaural ? `${colorTema}40` : undefined,
+                  backgroundColor: activeSoundscapes.binaural ? `${colorTema}10` : undefined,
+                }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0`} style={{ backgroundColor: activeSoundscapes.binaural ? colorTema : '#4b5563' }} />
+                  <div className="min-w-0">
+                    <span className="font-sans font-medium block truncate">Enfoque Binaural Beta</span>
+                    <span className="font-mono text-[8px] text-gray-500 block uppercase mt-0.5">Ondas cerebrales 40Hz</span>
+                  </div>
+                </div>
+                <span className="font-mono text-[8.5px] uppercase tracking-wider bg-black/40 px-1.5 py-0.5 rounded border border-white/5 shrink-0 ml-2">
+                  {activeSoundscapes.binaural ? 'ACTIVO' : 'APAGADO'}
+                </span>
+              </button>
+
+              {/* Engine Hum Drone */}
+              <button
+                type="button"
+                onClick={() => toggleSoundscape('space')}
+                className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-xs text-left transition duration-200 cursor-pointer ${
+                  activeSoundscapes.space
+                    ? 'bg-[rgba(168,85,247,0.08)] border-[#a855f7]/40 text-[#a855f7]'
+                    : 'bg-[#111116] border-[#22222d] text-gray-400 hover:text-white hover:border-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${activeSoundscapes.space ? 'bg-[#a855f7] animate-pulse' : 'bg-gray-600'}`} />
+                  <div className="min-w-0">
+                    <span className="font-sans font-medium block truncate">Hum de Motor Cósmico</span>
+                    <span className="font-mono text-[8px] text-gray-500 block uppercase mt-0.5">Drone modular de baja frec</span>
+                  </div>
+                </div>
+                <span className="font-mono text-[8.5px] uppercase tracking-wider bg-black/40 px-1.5 py-0.5 rounded border border-white/5 shrink-0 ml-2">
+                  {activeSoundscapes.space ? 'ACTIVO' : 'APAGADO'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 

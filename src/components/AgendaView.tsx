@@ -1,15 +1,16 @@
 import { useState, FormEvent } from 'react';
 import { AgendaEvent } from '../types';
-import { Calendar, Plus, Trash2, Clock, MapPin, Tag, Filter } from 'lucide-react';
+import { Calendar, Plus, Trash2, Clock, MapPin, Tag, Filter, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AgendaViewProps {
   events: AgendaEvent[];
   setEvents: (events: AgendaEvent[] | ((prev: AgendaEvent[]) => AgendaEvent[])) => void;
   colorTema: string;
+  addNotification?: (title: string, body: string, type: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
-export default function AgendaView({ events, setEvents, colorTema }: AgendaViewProps) {
+export default function AgendaView({ events, setEvents, colorTema, addNotification }: AgendaViewProps) {
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
@@ -32,6 +33,14 @@ export default function AgendaView({ events, setEvents, colorTema }: AgendaViewP
 
     setEvents(prev => [...prev, newEvent].sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)));
     
+    if (addNotification) {
+      addNotification(
+        'Compromiso Agendado 💼', 
+        `Nuevo evento: "${newEvent.title}" programado para el ${newEvent.date} a las ${newEvent.time} hrs.`, 
+        'info'
+      );
+    }
+
     setNewTitle('');
     setNewDate('');
     setNewTime('');
@@ -39,7 +48,23 @@ export default function AgendaView({ events, setEvents, colorTema }: AgendaViewP
   };
 
   const handleDeleteEvent = (id: string) => {
+    const event = events.find(e => e.id === id);
     setEvents(prev => prev.filter(e => e.id !== id));
+    if (event && addNotification) {
+      addNotification('Evento Cancelado 🗑️', `Se retiró de la agenda: "${event.title}"`, 'info');
+    }
+  };
+
+  const handleToggleEvent = (id: string) => {
+    const event = events.find(e => e.id === id);
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, completed: !e.completed } : e));
+    if (event && addNotification) {
+      if (!event.completed) {
+        addNotification('Evento Completado ✓', `Asistencia/compromiso concluido: "${event.title}"`, 'success');
+      } else {
+        addNotification('Evento Reactivado ↩️', `Se marcó pendiente: "${event.title}"`, 'info');
+      }
+    }
   };
 
   const filteredEvents = events.filter(ev => {
@@ -193,7 +218,20 @@ export default function AgendaView({ events, setEvents, colorTema }: AgendaViewP
                     <div className="flex-1 bg-[#0a0a0f] border border-[#161622] rounded-2xl p-5 hover:border-gray-700 transition flex items-center justify-between">
                       <div className="space-y-2 flex-1 pr-4 min-w-0">
                         <div className="flex items-center gap-3">
-                          <h4 className="font-sans font-semibold text-white text-sm truncate">
+                          <button
+                            onClick={() => handleToggleEvent(ev.id)}
+                            className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                              ev.completed 
+                                ? 'bg-[#00f2ff] border-transparent text-black' 
+                                : 'border-gray-800 text-transparent hover:border-gray-500'
+                            }`}
+                            style={{
+                              backgroundColor: ev.completed ? colorTema : undefined
+                            }}
+                          >
+                            <Check size={11} strokeWidth={3} className={ev.completed ? 'block' : 'opacity-0'} />
+                          </button>
+                          <h4 className={`font-sans font-semibold text-sm truncate ${ev.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                             {ev.title}
                           </h4>
                           <span className={`font-mono text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 ${catStyle}`}>

@@ -1,15 +1,41 @@
 import { useState, FormEvent } from 'react';
-import { Habit } from '../types';
-import { Repeat, Plus, Trash2, Check, Calendar, TrendingUp, Info } from 'lucide-react';
+import { Habit, Task, AgendaEvent } from '../types';
+import { 
+  Repeat, 
+  Plus, 
+  Trash2, 
+  Check, 
+  Calendar, 
+  TrendingUp, 
+  Info, 
+  CheckSquare, 
+  Clock, 
+  MapPin, 
+  Sparkles 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface RutinaViewProps {
   habits: Habit[];
   setHabits: (habits: Habit[] | ((prev: Habit[]) => Habit[])) => void;
+  tasks: Task[];
+  setTasks: (tasks: Task[] | ((prev: Task[]) => Task[])) => void;
+  events: AgendaEvent[];
+  setEvents: (events: AgendaEvent[] | ((prev: AgendaEvent[]) => AgendaEvent[])) => void;
   colorTema: string;
+  addNotification?: (title: string, body: string, type: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
-export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewProps) {
+export default function RutinaView({ 
+  habits, 
+  setHabits, 
+  tasks, 
+  setTasks, 
+  events, 
+  setEvents, 
+  colorTema,
+  addNotification
+}: RutinaViewProps) {
   const [newHabitName, setNewHabitName] = useState('');
   const [newFrequency, setNewFrequency] = useState('Diario');
 
@@ -26,11 +52,18 @@ export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewP
     };
 
     setHabits(prev => [newHabit, ...prev]);
+    if (addNotification) {
+      addNotification('Hábito Registrado 🔄', `Comienza tu rutina de "${newHabit.name}" (${newHabit.frequency})`, 'success');
+    }
     setNewHabitName('');
   };
 
   const handleDeleteHabit = (id: string) => {
+    const habit = habits.find(h => h.id === id);
     setHabits(prev => prev.filter(h => h.id !== id));
+    if (habit && addNotification) {
+      addNotification('Hábito Eliminado 🗑️', `El hábito "${habit.name}" fue retirado de tu rutina.`, 'info');
+    }
   };
 
   // Helper: get past 7 days date strings (YYYY-MM-DD)
@@ -58,11 +91,15 @@ export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewP
     setHabits(prev => prev.map(hab => {
       if (hab.id !== habitId) return hab;
       const updated = { ...hab.completedDays };
-      if (updated[dateStr] === true) {
-        updated[dateStr] = false; // toggle off
-      } else {
-        updated[dateStr] = true; // toggle on
+      const turningOn = !updated[dateStr];
+      updated[dateStr] = turningOn; // toggle
+
+      if (turningOn && addNotification) {
+        addNotification('¡Excelente Hábito! ⭐', `Completaste tu rutina de: "${hab.name}"`, 'success');
+      } else if (!turningOn && addNotification) {
+        addNotification('Hábito Reactivado 🔄', `Marcaste pendiente el hábito: "${hab.name}"`, 'info');
       }
+
       return {
         ...hab,
         completedDays: updated
@@ -79,6 +116,8 @@ export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewP
 
   // Calculate overall todays routine rate
   const todayStr = daysList[daysList.length - 1].dateStr;
+  const todayTasks = tasks.filter(t => t.dueDate === todayStr);
+  const todayEvents = events.filter(e => e.date === todayStr);
   const completedToday = habits.filter(h => h.completedDays[todayStr] === true).length;
   const overallRateToday = habits.length > 0 ? Math.round((completedToday / habits.length) * 100) : 0;
 
@@ -170,7 +209,132 @@ export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewP
         </div>
 
         {/* Habits Checklist Panel (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* TARGETAS DE ENFOQUE CRÍTICO DE HOY (SINCRO DE TAREAS Y COMPROMISOS) */}
+          <div className="bg-gradient-to-br from-[#0c0c14] to-[#04040a] border border-[#212130] rounded-2xl p-5 relative overflow-hidden space-y-4 shadow-xl">
+            <div className="absolute right-[-15px] top-[-15px] text-[#ffffff02] pointer-events-none select-none">
+              <Sparkles size={100} />
+            </div>
+
+            <div className="flex items-center justify-between border-b border-[#1b1b26] pb-3">
+              <div>
+                <span className="font-mono text-[9px] uppercase tracking-widest text-[#00f2ff] flex items-center gap-1.5" style={{ color: colorTema }}>
+                  ⚡ ENFOQUE CRÍTICO DE HOY
+                </span>
+                <h3 className="font-sans font-semibold text-white text-md mt-0.5">
+                  Compromisos y Acciones Clave
+                </h3>
+              </div>
+              <span className="font-mono text-[9px] text-[#555565] uppercase">
+                {todayStr}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {/* Today's Tasks */}
+              {todayTasks.length === 0 && todayEvents.length === 0 ? (
+                <div className="text-center py-5 text-gray-500 italic font-sans text-xs">
+                  ✓ Limbo cognitivo despejado: No hay tareas ni compromisos específicos agendados para hoy fuera de tu rutina preestablecida.
+                </div>
+              ) : (
+                <>
+                  {todayTasks.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="font-mono text-[8px] uppercase text-[#88889a] flex items-center gap-1">
+                        👉 <span className="font-semibold" style={{ color: colorTema }}>TAREAS PROGRAMADAS</span> ({todayTasks.filter(t => !t.completed).length} pendientes)
+                      </span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {todayTasks.map(task => (
+                          <div 
+                            key={task.id} 
+                            className="flex items-center justify-between bg-[#111118]/60 border border-[#1b1b26] rounded-xl p-3 hover:bg-[#11111a] transition"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <button
+                                onClick={() => {
+                                  setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+                                }}
+                                className={`w-4.5 h-4.5 rounded border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                                  task.completed 
+                                    ? 'bg-emerald-500 border-transparent text-black' 
+                                    : 'border-gray-700 text-transparent hover:border-gray-500'
+                                }`}
+                                style={{
+                                  backgroundColor: task.completed ? colorTema : undefined
+                                }}
+                              >
+                                <Check size={10} strokeWidth={3} className={task.completed ? 'block' : 'opacity-0'} />
+                              </button>
+                              <span className={`font-sans text-xs truncate ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
+                                {task.title}
+                              </span>
+                            </div>
+                            <span className={`font-mono text-[6.5px] uppercase px-1 rounded shrink-0 ml-1.5 ${
+                              task.priority === 'high' 
+                                ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+                                : task.priority === 'medium'
+                                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                  : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                            }`}>
+                              {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Media' : 'Baja'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {todayEvents.length > 0 && (
+                    <div className="space-y-2 pt-1 border-t border-[#13131c]">
+                      <span className="font-mono text-[8px] uppercase text-[#88889a] flex items-center gap-1">
+                        💼 <span className="font-semibold" style={{ color: colorTema }}>AGENDA DE ESTE DÍA</span> ({todayEvents.filter(e => !e.completed).length} por cumplir)
+                      </span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {todayEvents.map(event => (
+                          <div 
+                            key={event.id} 
+                            className="flex items-center justify-between bg-[#111118]/60 border border-[#1b1b26] rounded-xl p-3 hover:bg-[#11111a] transition"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <button
+                                onClick={() => {
+                                  setEvents(prev => prev.map(e => e.id === event.id ? { ...e, completed: !e.completed } : e));
+                                }}
+                                className={`w-4.5 h-4.5 rounded border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                                  event.completed 
+                                    ? 'bg-emerald-500 border-transparent text-black' 
+                                    : 'border-gray-700 text-transparent hover:border-gray-500'
+                                }`}
+                                style={{
+                                  backgroundColor: event.completed ? colorTema : undefined
+                                }}
+                              >
+                                <Check size={10} strokeWidth={3} className={event.completed ? 'block' : 'opacity-0'} />
+                              </button>
+                              <div className="min-w-0 flex-1">
+                                <span className={`font-sans text-xs truncate block ${event.completed ? 'line-through text-gray-500' : 'text-white'}`}>
+                                  {event.title}
+                                </span>
+                                <div className="flex items-center gap-2 font-mono text-[9px] text-[#666]">
+                                  <span>⏱️ {event.time} HRS</span>
+                                  {event.location && <span className="truncate">📍 {event.location}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <span className="font-mono text-[6.5px] uppercase px-1.5 py-0.2 bg-[#1b1b29] rounded text-gray-400 border border-gray-800 shrink-0 ml-1.5">
+                              {event.category}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
           <span className="font-mono text-[10px] uppercase tracking-widest text-[#888892] px-1 block mb-1">
             Matriz Temporal Completa (Últimos 7 días)
           </span>
@@ -220,24 +384,24 @@ export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewP
                     </div>
 
                     {/* Past 7 days checkoff grid circles */}
-                    <div className="grid grid-cols-7 gap-3 text-center">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-3 text-center">
                       {daysList.map(day => {
                         const isDone = habit.completedDays[day.dateStr] === true;
                         
                         return (
-                          <div key={day.dateStr} className="flex flex-col items-center gap-2">
+                          <div key={day.dateStr} className="flex flex-col items-center gap-1.5 min-w-0">
                             {/* Short label */}
-                            <span className="font-mono text-[9px] text-[#555562] font-semibold">
+                            <span className="font-mono text-[7.5px] min-[360px]:text-[9px] text-[#555562] font-semibold truncate w-full block">
                               {day.label}
                             </span>
-                            <span className="font-mono text-[8px] text-[#444452] -mt-1 block">
+                            <span className="font-mono text-[7px] min-[360px]:text-[8px] text-[#444452] -mt-1 block">
                               {day.dayNum}
                             </span>
 
                             {/* Check button */}
                             <button
                               onClick={() => handleToggleHabitDay(habit.id, day.dateStr)}
-                              className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                              className={`w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                                 isDone 
                                   ? 'bg-[#00f2ff] border-transparent text-black shadow-lg shadow-cyan-950/20' 
                                   : day.isToday 
@@ -249,7 +413,7 @@ export default function RutinaView({ habits, setHabits, colorTema }: RutinaViewP
                                 borderColor: !isDone && day.isToday ? colorTema : undefined
                               }}
                             >
-                              <Check size={14} strokeWidth={3} className={isDone ? 'block' : 'opacity-0 hover:opacity-20 hover:text-white'} />
+                              <Check size={12} strokeWidth={3} className={isDone ? 'block' : 'opacity-0 hover:opacity-20 hover:text-white'} />
                             </button>
                           </div>
                         );
