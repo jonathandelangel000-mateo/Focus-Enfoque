@@ -5,6 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: '/Focus-Enfoque/', // <--- ¡Añade esta línea aquí!
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
